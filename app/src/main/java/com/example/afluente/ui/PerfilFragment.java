@@ -31,6 +31,7 @@ import com.example.afluente.R;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.data.PerfilDAO;
 import com.example.afluente.service.FotoPerfilService;
+import com.example.afluente.service.NotificacaoService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
@@ -65,6 +66,11 @@ public class PerfilFragment extends Fragment {
         if (sucesso) load(); else toast("Não foi possível salvar a foto. Selecione uma imagem de até 25 MB.");
     };
     // GetContent concede acesso temporário à imagem escolhida sem permissões amplas de mídia.
+    private final ActivityResultLauncher<String> notificationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (!isAdded()) return;
+                if (granted) enviarAlertasPendentes(); else avisarNotificacoesBloqueadas();
+            });
     private final ActivityResultLauncher<String> photoPicker = registerForActivityResult(new ActivityResultContracts.GetContent(), this::onPhotoSelected);
 
     @Nullable @Override public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle state) {
@@ -99,7 +105,10 @@ public class PerfilFragment extends Fragment {
             if (applying || perfil == null) return;
             button.setEnabled(false);
             ContentValues changes = new ContentValues(); changes.put("notificacao_ativa", checked ? 1 : 0);
-            update(changes, () -> { perfil.notificacoes = checked; button.setEnabled(true); }, () -> {
+            update(changes, () -> {
+                perfil.notificacoes = checked; button.setEnabled(true);
+                if (checked) garantirPermissaoNotificacoes(); else NotificacaoService.cancelarTodas(requireContext());
+            }, () -> {
                 applying = true; button.setChecked(perfil.notificacoes); applying = false; button.setEnabled(true);
             });
         });
@@ -291,6 +300,48 @@ public class PerfilFragment extends Fragment {
             });
         }));
         dialog.show();
+    }
+
+    /** Ao ativar a preferência, garante que o Android também permite exibir as notificações. */
+    private void garantirPermissaoNotificacoes() {
+        Context context = requireContext();
+        if (!NotificacaoService.temPermissao(context) && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        } else if (!NotificacaoService.podeNotificar(context)) {
+            avisarNotificacoesBloqueadas();
+        } else {
+            enviarAlertasPendentes();
+        }
+    }
+
+    /** Permissão negada ou notificações desligadas no sistema: oferece abrir as configurações do app. */
+    private void avisarNotificacoesBloqueadas() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(R.string.notification_permission_denied)
+                .setNegativeButton("Agora não", null)
+                .setPositiveButton(R.string.notification_open_settings, (d, w) -> {
+                    Intent intent;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
+                    } else {
+                        intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", requireContext().getPackageName(), null));
+                    }
+                    startActivity(intent);
+                }).show();
+    }
+
+    private void enviarAlertasPendentes() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        Context context = requireContext().getApplicationContext();
+        String uid = user.getUid();
+        if (executor == null || executor.isShutdown()) return;
+        executor.execute(() -> {
+            DatabaseHelper helper = new DatabaseHelper(context);
+            try { NotificacaoService.enviarPendentes(context, helper, uid); } finally { helper.close(); }
+        });
     }
 
     private void editTariff(boolean water) {

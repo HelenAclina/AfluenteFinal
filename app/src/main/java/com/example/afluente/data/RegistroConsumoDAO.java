@@ -19,6 +19,12 @@ public class RegistroConsumoDAO {
 
     /** Retorna false quando a tarifa não está configurada; o custo fica NULL. */
     public boolean inserirRegistro(String uid, String tipo, BigDecimal consumo, String data, String observacao) {
+        boolean comTarifa = inserirNaTransacao(uid, tipo, consumo, data, observacao);
+        helper.notificarAlertasPendentes(uid); // após o commit
+        return comTarifa;
+    }
+
+    private boolean inserirNaTransacao(String uid, String tipo, BigDecimal consumo, String data, String observacao) {
         ConsumoService.validar(uid, tipo, consumo, data);
         SQLiteDatabase db = helper.getWritableDatabase();
         db.beginTransaction();
@@ -83,6 +89,12 @@ public class RegistroConsumoDAO {
     }
 
     public boolean excluir(String uid, long id) {
+        boolean removido = excluirNaTransacao(uid, id);
+        helper.notificarAlertasPendentes(uid);
+        return removido;
+    }
+
+    private boolean excluirNaTransacao(String uid, long id) {
         SQLiteDatabase db = helper.getWritableDatabase(); db.beginTransaction();
         try {
             String oldDate = null;
@@ -97,6 +109,12 @@ public class RegistroConsumoDAO {
 
     /** Mantém o custo original se somente data/observação forem alteradas. */
     public boolean atualizarRegistro(String uid, long id, String tipo, BigDecimal consumo, String data, String observacao) {
+        boolean comTarifa = atualizarNaTransacao(uid, id, tipo, consumo, data, observacao);
+        helper.notificarAlertasPendentes(uid);
+        return comTarifa;
+    }
+
+    private boolean atualizarNaTransacao(String uid, long id, String tipo, BigDecimal consumo, String data, String observacao) {
         ConsumoService.validar(uid, tipo, consumo, data);
         SQLiteDatabase db = helper.getWritableDatabase();
         db.beginTransaction();

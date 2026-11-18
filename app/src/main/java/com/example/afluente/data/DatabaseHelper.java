@@ -4,11 +4,26 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.example.afluente.service.NotificacaoService;
+
 /** Base local por UID do Firebase; os dados não são sincronizados entre aparelhos. */
 public class DatabaseHelper extends SQLiteOpenHelper {
+    private final Context appContext;
+
     public DatabaseHelper(Context context) { this(context, "afluente.db"); }
     // Nome alternativo permite testes instrumentados sem tocar no banco do usuário.
-    DatabaseHelper(Context context, String name) { super(context, name, null, 9); }
+    DatabaseHelper(Context context, String name) {
+        super(context, name, null, 10);
+        appContext = context.getApplicationContext();
+    }
+
+    /**
+     * Chamado pelos DAOs depois que a transação que reavalia os alertas é confirmada.
+     * Envia como notificação do sistema os alertas novos que ainda não foram notificados.
+     */
+    void notificarAlertasPendentes(String uid) {
+        NotificacaoService.enviarPendentes(appContext, this, uid);
+    }
 
     @Override public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
@@ -22,7 +37,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         createMetas(db);
         createRelatorios(db);
         db.execSQL("CREATE INDEX idx_consumo_usuario_data ON registros_consumo(usuario_id, data_registro)");
-        db.execSQL("CREATE TABLE alertas (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, titulo TEXT NOT NULL, descricao TEXT NOT NULL, uuid TEXT, tipo_alerta TEXT NOT NULL DEFAULT 'ATENCAO', lido INTEGER NOT NULL DEFAULT 0 CHECK(lido IN (0,1)), data_geracao TEXT NOT NULL)");
+        db.execSQL("CREATE TABLE alertas (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, titulo TEXT NOT NULL, descricao TEXT NOT NULL, uuid TEXT, tipo_alerta TEXT NOT NULL DEFAULT 'ATENCAO', lido INTEGER NOT NULL DEFAULT 0 CHECK(lido IN (0,1)), data_geracao TEXT NOT NULL, notificado INTEGER NOT NULL DEFAULT 0 CHECK(notificado IN (0,1)))");
         db.execSQL("CREATE INDEX idx_alertas_usuario_lido_data ON alertas(usuario_id, lido, data_geracao DESC, id DESC)");
     }
     private void createMetas(SQLiteDatabase db) {
@@ -61,6 +76,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 5) {
             db.execSQL("ALTER TABLE configuracoes_usuario ADD COLUMN notificacao_ativa INTEGER NOT NULL DEFAULT 1");
             db.execSQL("ALTER TABLE configuracoes_usuario ADD COLUMN tema_escuro INTEGER NOT NULL DEFAULT 0");
+        }
+        if (oldVersion < 10) {
+            // Controla quais alertas já viraram notificação do sistema, evitando repetição.
+            db.execSQL("ALTER TABLE alertas ADD COLUMN notificado INTEGER NOT NULL DEFAULT 0 CHECK(notificado IN (0,1))");
+            // Alertas anteriores à atualização já foram vistos no app: não disparar em lote.
+            db.execSQL("UPDATE alertas SET notificado = 1");
         }
     }
 }

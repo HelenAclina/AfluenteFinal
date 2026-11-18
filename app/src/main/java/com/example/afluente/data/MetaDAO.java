@@ -14,6 +14,7 @@ public class MetaDAO {
     public void atualizarAlertas(String uid) {
         SQLiteDatabase db = helper.getWritableDatabase(); db.beginTransaction();
         try { AlertaService.verificarMetas(db, uid); db.setTransactionSuccessful(); } finally { db.endTransaction(); }
+        helper.notificarAlertasPendentes(uid);
     }
     public static class Dados { public Double meta, consumo; }
     public Dados consultar(String uid, String tipo) {
@@ -48,6 +49,7 @@ public class MetaDAO {
             AlertaService.verificarMetas(db, uid);
             db.setTransactionSuccessful();
         } finally { db.endTransaction(); }
+        helper.notificarAlertasPendentes(uid);
     }
     private void validarTipo(String tipo) { if (!"AGUA".equals(tipo) && !"ENERGIA".equals(tipo)) throw new IllegalArgumentException("Tipo inválido"); }
 }

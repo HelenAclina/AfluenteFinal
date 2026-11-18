@@ -34,4 +34,8 @@
     <string name="register_observation">OBSERVAÇÃO (OPCIONAL)</string>
     <string name="register_observation_hint">Ex: Lavagem de roupa, AC ligado...</string>
     <string name="register_save">Salvar registro</string>
+    <string name="notification_channel_alerts">Alertas de consumo</string>
+    <string name="notification_channel_alerts_description">Avisos de meta ultrapassada e de aumento anormal no consumo de água e energia.</string>
+    <string name="notification_permission_denied">Notificações bloqueadas. Os alertas continuam disponíveis na tela de Notificações.</string>
+    <string name="notification_open_settings">Abrir configurações</string>
 </resources>
