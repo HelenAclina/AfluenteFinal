@@ -3,7 +3,6 @@ package com.example.afluente.ui;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -20,6 +19,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.example.afluente.service.ValorDecimal;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -89,19 +90,16 @@ public class MetasConsumoActivity extends AppCompatActivity {
         if (busy) return;
         MetaDAO.Dados data = "AGUA".equals(type) ? water : energy;
         EditText input = new EditText(this);
-        input.setSingleLine(true); input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        CampoDecimal.configurar(input);
         input.setHint("Valor maior que zero");
         if (data != null && data.meta != null) input.setText(BigDecimal.valueOf(data.meta).stripTrailingZeros().toPlainString().replace('.', ','));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this).setTitle("Definir meta de " + ("AGUA".equals(type) ? "água (m³)" : "energia (kWh)"))
                 .setMessage("Informe um valor positivo, com até três casas decimais.")
                 .setView(input).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
         dialog.setOnShowListener(v -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
-            try {
-                String raw = input.getText().toString().trim().replace(',', '.');
-                BigDecimal value = new BigDecimal(raw);
-                if (value.signum() <= 0 || value.stripTrailingZeros().scale() > 3 || value.compareTo(new BigDecimal("1000000000")) > 0) throw new NumberFormatException();
-                dialog.dismiss(); change(type, value, false);
-            } catch (NumberFormatException e) { input.setError("Informe um valor válido de 0,001 a 1.000.000.000."); }
+            BigDecimal value = CampoDecimal.ler(input, ValorDecimal.Regra.META);
+            if (value == null) return;
+            dialog.dismiss(); change(type, value, false);
         }));
         dialog.show();
     }

@@ -12,7 +12,7 @@ import com.example.afluente.R;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.math.BigDecimal;
+import com.example.afluente.service.ValorDecimal;
 
 /** Coleta estimativas opcionais; não registra consumo real nem conclui o cadastro. */
 public class OnboardingStep3Activity extends AppCompatActivity {
@@ -32,6 +32,8 @@ public class OnboardingStep3Activity extends AppCompatActivity {
         energy = findViewById(R.id.etConsumoEnergia);
         waterLayout = findViewById(R.id.inputAgua);
         energyLayout = findViewById(R.id.inputEnergia);
+        CampoDecimal.configurar(water);
+        CampoDecimal.configurar(energy);
         unknown = findViewById(R.id.cbNaoSeiConsumo);
         Bundle state = savedInstanceState != null ? savedInstanceState : getIntent().getExtras();
         if (state != null) {
@@ -72,19 +74,9 @@ public class OnboardingStep3Activity extends AppCompatActivity {
     }
 
     private boolean validate(TextInputEditText field, TextInputLayout layout) {
-        String value = value(field);
         layout.setError(null);
-        if (value.isEmpty()) return true; // Apenas um dos recursos pode ser informado.
-        try {
-            // Não aceitar sinais, separadores repetidos, notação exponencial ou números negativos.
-            if (!value.matches("[0-9]+([.,][0-9]+)?")) throw new NumberFormatException();
-            BigDecimal amount = new BigDecimal(value.replace(',', '.'));
-            if (amount.signum() < 0 || Double.isInfinite(amount.doubleValue())) throw new NumberFormatException();
-            return true;
-        } catch (NumberFormatException ex) {
-            layout.setError(getString(R.string.invalid_consumption));
-            return false;
-        }
+        if (value(field).isEmpty()) return true; // Apenas um dos recursos pode ser informado.
+        return CampoDecimal.ler(field, layout, ValorDecimal.Regra.CONSUMO) != null;
     }
 
     private String value(TextInputEditText field) {

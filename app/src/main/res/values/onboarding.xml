@@ -22,7 +22,6 @@
     <string name="water_unit">m³/mês</string><string name="energy_unit">kWh/mês</string>
     <string name="unknown_consumption">Não sei meu consumo ainda</string>
     <string name="consumption_empty">Informe ao menos um consumo ou selecione que ainda não sabe.</string>
-    <string name="invalid_consumption">Informe um número válido, igual ou maior que zero.</string>
     <string name="step_four_pending">A próxima etapa do cadastro ainda será implementada.</string>
     <string name="step_four">4 de 5</string>
     <string name="objectives_title">Qual é o seu objetivo?</string>
@@ -50,6 +49,5 @@
     <string name="tariffs_info">💡  Você pode encontrar esses valores na sua conta de água ou energia.\n      Pode alterar depois em Perfil → Tarifas.</string>
     <string name="finish_configuration">Concluir configuração</string>
     <string name="skip_configuration">Pular e configurar depois</string>
-    <string name="invalid_tariff">Informe uma tarifa válida, maior que zero.</string>
     <string name="finish_pending">Tarifas guardadas como rascunho. A conclusão do cadastro ainda será integrada.</string>
 </resources>
