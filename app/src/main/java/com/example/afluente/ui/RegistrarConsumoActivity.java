@@ -36,6 +36,7 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
     private boolean recordLoaded;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private TextInputEditText dateField, amountField, noteField;
+    private FormularioValidado form;
     private TextInputLayout dateLayout, amountLayout;
     private MaterialButtonToggleGroup toggle;
     private String uid;
@@ -62,6 +63,10 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
         toggle.addOnButtonCheckedListener((group, id, checked) -> { if (checked) updateResource(id); });
         updateResource(toggle.getCheckedButtonId());
         findViewById(R.id.btnSalvarRegistro).setOnClickListener(v -> save());
+        FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelData));
+        form = new FormularioValidado(findViewById(R.id.btnSalvarRegistro))
+                .campo(dateField, dateLayout, this::erroData)
+                .campo(amountField, amountLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.CONSUMO).erro);
         // Novo registro já começa com a data de hoje.
         if (editId <= 0 && state == null) dateField.setText(new SimpleDateFormat(DISPLAY, Locale.ROOT).format(new Date()));
         if (editId > 0) {
@@ -97,9 +102,19 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
 
     private void updateResource(int id) {
         boolean energy = id == R.id.btnTabEnergia;
-        ((TextView) findViewById(R.id.labelConsumo)).setText(energy ? R.string.register_energy_label : R.string.register_water_label);
+        TextView label = findViewById(R.id.labelConsumo);
+        label.setText(energy ? R.string.register_energy_label : R.string.register_water_label);
+        FormularioValidado.marcarObrigatorio(label);
         amountLayout.setSuffixText(energy ? "kWh" : "m³");
         amountField.setHint(energy ? R.string.register_energy_hint : R.string.register_water_hint);
+    }
+
+    /** Regra do campo de data (DD/MM/AAAA), usada na validação enquanto preenche. */
+    private String erroData(String texto) {
+        String iso = toIso(texto.trim());
+        if (parseDate(iso) == null) return "Selecione uma data válida.";
+        if (ConsumoService.dataFutura(iso)) return "A data não pode ser posterior a hoje.";
+        return null;
     }
 
     private void pickDate() {
@@ -186,7 +201,7 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
     private String text(TextInputEditText field) { return field.getText() == null ? "" : field.getText().toString().trim(); }
     private void setBusy(boolean value) {
         busy = value;
-        findViewById(R.id.btnSalvarRegistro).setEnabled(!value);
+        if (form != null) form.setOcupado(value); else findViewById(R.id.btnSalvarRegistro).setEnabled(!value);
         findViewById(R.id.btnVoltar).setEnabled(!value);
         toggle.setEnabled(!value);
         dateField.setEnabled(!value);
@@ -198,5 +213,5 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
         super.onSaveInstanceState(state);
     }
     @Override public void onBackPressed() { if (!busy) super.onBackPressed(); }
-    @Override protected void onDestroy() { closed = true; executor.shutdown(); super.onDestroy(); }
+    @Override protected void onDestroy() { closed = true; if (form != null) form.liberar(); executor.shutdown(); super.onDestroy(); }
 }

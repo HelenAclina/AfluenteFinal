@@ -102,6 +102,9 @@ public class MetasConsumoActivity extends AppCompatActivity {
             dialog.dismiss(); change(type, value, false);
         }));
         dialog.show();
+        FormularioValidado form = new FormularioValidado(dialog.getButton(AlertDialog.BUTTON_POSITIVE))
+                .campo(input, t -> ValorDecimal.validar(t, ValorDecimal.Regra.META).erro);
+        dialog.setOnDismissListener(d -> form.liberar());
     }
     private void render() {
         renderMetric(water, "m³", R.id.tvTagStatusAgua, R.id.tvConsumidoAgua, R.id.tvMetaAgua, R.id.pbMetaAgua, R.id.tvExcedidoAgua, R.id.tvValorMetaAgua, R.color.water_accent);

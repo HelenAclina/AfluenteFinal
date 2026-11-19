@@ -3,6 +3,7 @@ package com.example.afluente.ui;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,6 +33,7 @@ public class OnboardingStep5Activity extends AppCompatActivity {
     public static final String KEY_SKIPPED = "tariffs_skipped";
     private TextInputEditText water, energy;
     private TextInputLayout waterLayout, energyLayout;
+    private FormularioValidado form;
     private SharedPreferences draft;
     private boolean busy;
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
@@ -53,6 +55,11 @@ public class OnboardingStep5Activity extends AppCompatActivity {
             water.setText(draft.getString(KEY_WATER_TARIFF, "5,00"));
             energy.setText(draft.getString(KEY_ENERGY_TARIFF, "0,60"));
         }
+        FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelTarifaAgua));
+        FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelTarifaEnergia));
+        form = new FormularioValidado(findViewById(R.id.btnConcluirConfiguracao))
+                .campo(water, waterLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro)
+                .campo(energy, energyLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro);
         findViewById(R.id.btnVoltar).setOnClickListener(v -> onBackPressed());
         findViewById(R.id.btnConcluirConfiguracao).setOnClickListener(v -> {
             BigDecimal waterValue = parse(water, waterLayout);
@@ -128,7 +135,7 @@ public class OnboardingStep5Activity extends AppCompatActivity {
 
     private void setBusy(boolean value) {
         busy = value;
-        findViewById(R.id.btnConcluirConfiguracao).setEnabled(!value);
+        if (form != null) form.setOcupado(value); else findViewById(R.id.btnConcluirConfiguracao).setEnabled(!value);
         findViewById(R.id.tvPularConfiguracao).setEnabled(!value);
         findViewById(R.id.btnVoltar).setEnabled(!value);
         if (value) Toast.makeText(this, "Criando sua conta...", Toast.LENGTH_SHORT).show();

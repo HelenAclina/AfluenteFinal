@@ -3,6 +3,7 @@ package com.example.afluente.ui;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,6 +26,7 @@ public class OnboardingStep2Activity extends AppCompatActivity {
     private boolean unknown;
     private int residents;
     private String residenceType = "";
+    private FormularioValidado form;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,10 +72,16 @@ public class OnboardingStep2Activity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_CONSUMPTION);
             }
         });
+        // Continuar só fica ativo com as duas escolhas feitas.
+        FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.residentsLabel));
+        FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.typeLabel));
+        form = new FormularioValidado(findViewById(R.id.btnContinuar))
+                .condicao(() -> residents > 0 && !residenceType.isEmpty());
         updateSelection();
     }
 
     private void updateSelection() {
+        if (form != null) form.reavaliar();
         int blue = ContextCompat.getColor(this, R.color.onboarding_blue);
         int border = ContextCompat.getColor(this, R.color.onboarding_border);
         int white = ContextCompat.getColor(this, R.color.surface);
