@@ -89,7 +89,7 @@ public class DashboardFragment extends Fragment {
             startActivity(intent);
         });
         view.findViewById(R.id.fabAdicionarConsumo).setOnClickListener(v -> openConsumption());
-        view.findViewById(R.id.tvAlertCount).setOnClickListener(v -> openAlerts());
+        view.findViewById(R.id.btnAlertas).setOnClickListener(v -> openAlerts());
         view.findViewById(R.id.cardAlertaConsumo).setOnClickListener(v -> openAlerts());
         view.findViewById(R.id.atalhoRegistrar).setOnClickListener(v -> openConsumption());
         view.findViewById(R.id.atalhoMetas).setOnClickListener(v -> startActivity(new Intent(requireContext(), MetasConsumoActivity.class)));
@@ -167,7 +167,12 @@ public class DashboardFragment extends Fragment {
         text(R.id.tvGastoEstimado).setText(cost == null ? "—" : currency.format(cost));
         // O mês atual ainda está em andamento: a frase diz "Até agora" em vez de "economizou".
         text(R.id.tvComparacaoGasto).setText(TextoVariacao.gasto(previous, cost, true));
-        text(R.id.tvAlertCount).setText("🔔 " + data.unreadCount);
+        // Sino: a bolinha mostra a quantidade só quando há alertas não lidos (9+ acima de nove).
+        TextView badge = text(R.id.tvAlertBadge);
+        badge.setVisibility(data.unreadCount > 0 ? View.VISIBLE : View.GONE);
+        badge.setText(data.unreadCount > 9 ? "9+" : String.valueOf(data.unreadCount));
+        root.findViewById(R.id.btnAlertas).setContentDescription(data.unreadCount == 0 ? "Alertas, nenhum não lido"
+                : "Alertas, " + data.unreadCount + (data.unreadCount == 1 ? " não lido" : " não lidos"));
         root.findViewById(R.id.cardAlertaConsumo).setVisibility(data.unreadCount > 0 ? View.VISIBLE : View.GONE);
         if (data.unreadCount > 0) {
             text(R.id.tvTituloAlerta).setText(data.alertTitle);
