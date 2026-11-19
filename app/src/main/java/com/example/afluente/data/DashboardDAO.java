@@ -24,6 +24,13 @@ public class DashboardDAO {
     }
 
     public Snapshot load(String uid) {
+        Snapshot snapshot = carregarNaTransacao(uid);
+        // Abrir o painel também reavalia os alertas (ex.: virada do mês); notifica após o commit.
+        helper.notificarAlertasPendentes(uid);
+        return snapshot;
+    }
+
+    private Snapshot carregarNaTransacao(String uid) {
         Snapshot result = new Snapshot();
         SQLiteDatabase db = helper.getWritableDatabase();
         db.beginTransaction();
