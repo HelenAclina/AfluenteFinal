@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.afluente.R;
 import com.example.afluente.data.AlertaDAO;
+import com.example.afluente.service.NotificacaoService;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.model.Alerta;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -72,6 +73,7 @@ public class NotificacoesActivity extends AppCompatActivity {
         executor.execute(() -> {
             try {
                 if (!dao.marcarComoLido(alerta.id, uid)) { showError(); return; }
+                NotificacaoService.cancelar(getApplicationContext(), alerta.id);
                 runOnUiThread(() -> {
                     if (closed) return;
                     alerta.lido = true;

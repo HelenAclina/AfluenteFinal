@@ -16,7 +16,12 @@ public class AlertaDAO {
         List<Alerta> result = new ArrayList<>();
         SQLiteDatabase db = helper.getWritableDatabase();
         db.beginTransaction();
-        try { AlertaService.verificarMetas(db, uid); db.setTransactionSuccessful(); } finally { db.endTransaction(); }
+        try {
+            AlertaService.verificarMetas(db, uid);
+            // A usuária está vendo a lista: os alertas exibidos aqui não precisam virar notificação.
+            db.execSQL("UPDATE alertas SET notificado=1 WHERE notificado=0 AND usuario_id IN (SELECT id FROM usuarios WHERE firebase_uid=?)", new Object[]{uid});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
         String sql = "SELECT a.id,a.titulo,a.descricao,a.tipo_alerta,a.data_geracao,a.lido " +
                 "FROM alertas a JOIN usuarios u ON u.id=a.usuario_id WHERE u.firebase_uid=? " +
                 "ORDER BY a.data_geracao DESC,a.id DESC";
