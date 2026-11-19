@@ -13,6 +13,7 @@ import com.example.afluente.data.DashboardDAO;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.service.DashboardService;
 import com.example.afluente.service.AlertaService;
+import com.example.afluente.service.TextoVariacao;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -105,6 +106,9 @@ public class ConsumptionAnalysisActivity extends AppCompatActivity {
         text(R.id.tvAtual).setText(available[5] ? number(values[5]) + " " + unit : "—");
         text(R.id.tvAnterior).setText(available[4] ? number(values[4]) + " " + unit : "—");
         text(R.id.tvVariacao).setText("Sem comparação");
+        // Frase explicativa: o mês atual ainda está em andamento ("Até agora...").
+        text(R.id.tvVariacaoTexto).setText(!available[5] ? "Sem registros neste mês"
+                : TextoVariacao.consumo(available[4] ? values[4] : null, values[5], energy ? "energia" : "água", true));
         if (available[5] && available[4] && values[4] > 0) {
             double variation = (values[5] - values[4]) / values[4] * 100;
             text(R.id.tvVariacao).setText(String.format(locale, "%s %.1f%%", variation >= 0 ? "↑" : "↓", Math.abs(variation)));

@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
-import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +41,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+import com.example.afluente.service.RegrasFormulario;
 import com.example.afluente.service.ValorDecimal;
 
 import java.math.BigDecimal;
@@ -193,6 +193,13 @@ public class PerfilFragment extends Fragment {
         return field;
     }
 
+    /** Padrão de formulário nos diálogos: "Salvar" só fica ativo com o campo válido. */
+    private FormularioValidado validar(AlertDialog dialog, EditText field, FormularioValidado.Regra regra) {
+        FormularioValidado form = new FormularioValidado(dialog.getButton(AlertDialog.BUTTON_POSITIVE)).campo(field, regra);
+        dialog.setOnDismissListener(d -> form.liberar());
+        return form;
+    }
+
     private android.widget.FrameLayout fieldContainer(EditText field) {
         android.widget.FrameLayout container = new android.widget.FrameLayout(requireContext());
         int pad = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
@@ -208,7 +215,8 @@ public class PerfilFragment extends Fragment {
                 .setView(fieldContainer(field)).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String name = field.getText().toString().trim();
-            if (name.isEmpty() || name.length() > 100) { field.setError("Informe um nome de até 100 caracteres."); return; }
+            String erroNome = RegrasFormulario.nome(name);
+            if (erroNome != null) { field.setError(erroNome); return; }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             final View view = root;
             UserProfileChangeRequest request = new UserProfileChangeRequest.Builder().setDisplayName(name).build();
@@ -236,6 +244,7 @@ public class PerfilFragment extends Fragment {
             });
         }));
         dialog.show();
+        validar(dialog, field, RegrasFormulario::nome);
     }
 
     private void editEmail() {
@@ -245,12 +254,17 @@ public class PerfilFragment extends Fragment {
                 .setView(fieldContainer(field)).setNegativeButton("Cancelar", null).setPositiveButton("Enviar link", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String email = field.getText().toString().trim();
-            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) { field.setError("Informe um e-mail válido."); return; }
+            String erroEmail = RegrasFormulario.email(email);
+            if (erroEmail != null) { field.setError(erroEmail); return; }
             if (email.equalsIgnoreCase(user.getEmail())) { field.setError("Informe um e-mail diferente do atual."); return; }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             sendEmailVerification(email, dialog, false);
         }));
         dialog.show();
+        validar(dialog, field, t -> {
+            String erro = RegrasFormulario.email(t);
+            return erro == null && t.trim().equalsIgnoreCase(user.getEmail()) ? "Informe um e-mail diferente do atual." : erro;
+        });
     }
 
     private void sendEmailVerification(String email, AlertDialog dialog, boolean reauthenticated) {
@@ -302,6 +316,49 @@ public class PerfilFragment extends Fragment {
             });
         }));
         dialog.show();
+        validar(dialog, password, RegrasFormulario::senhaInformada);
+    }
+
+    /** Ao ativar a preferência, garante que o Android também permite exibir as notificações. */
+    private void garantirPermissaoNotificacoes() {
+        Context context = requireContext();
+        if (!NotificacaoService.temPermissao(context) && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        } else if (!NotificacaoService.podeNotificar(context)) {
+            avisarNotificacoesBloqueadas();
+        } else {
+            enviarAlertasPendentes();
+        }
+    }
+
+    /** Permissão negada ou notificações desligadas no sistema: oferece abrir as configurações do app. */
+    private void avisarNotificacoesBloqueadas() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(R.string.notification_permission_denied)
+                .setNegativeButton("Agora não", null)
+                .setPositiveButton(R.string.notification_open_settings, (d, w) -> {
+                    Intent intent;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
+                    } else {
+                        intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", requireContext().getPackageName(), null));
+                    }
+                    startActivity(intent);
+                }).show();
+    }
+
+    private void enviarAlertasPendentes() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        Context context = requireContext().getApplicationContext();
+        String uid = user.getUid();
+        if (executor == null || executor.isShutdown()) return;
+        executor.execute(() -> {
+            DatabaseHelper helper = new DatabaseHelper(context);
+            try { NotificacaoService.enviarPendentes(context, helper, uid); } finally { helper.close(); }
+        });
     }
 
     /** Ao ativar a preferência, garante que o Android também permite exibir as notificações. */
@@ -358,20 +415,25 @@ public class PerfilFragment extends Fragment {
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(water ? "Tarifa de água (R$/m³)" : "Tarifa de energia (R$/kWh)")
                 .setMessage("A nova tarifa será usada nos próximos registros e nas estimativas do painel. Os custos já gravados nos registros e nos relatórios não serão alterados.")
-                .setView(wrap).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            BigDecimal parsed = CampoDecimal.ler(field, ValorDecimal.Regra.TARIFA);
-            if (parsed == null) return;
-            double value = parsed.doubleValue();
-            ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            update(changes, () -> {
-                if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
-                text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
-                dialog.dismiss(); toast("Tarifa atualizada.");
-            }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
-        }));
+                .setView(wrap).setNegativeButton("Cancelar", null).setNeutralButton(R.string.bill_help_open, null).setPositiveButton("Salvar", null).create();
+        dialog.setOnShowListener(ignored -> {
+            // "Onde encontro na conta?" abre a ajuda sem fechar o diálogo da tarifa.
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> AjudaConta.mostrar(requireContext(), !water, AjudaConta.Campo.TARIFA));
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                BigDecimal parsed = CampoDecimal.ler(field, ValorDecimal.Regra.TARIFA);
+                if (parsed == null) return;
+                double value = parsed.doubleValue();
+                ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                update(changes, () -> {
+                    if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
+                    text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
+                    dialog.dismiss(); toast("Tarifa atualizada.");
+                }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
+            });
+        });
         dialog.show();
+        validar(dialog, field, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro);
     }
 
     private void update(ContentValues changes, Runnable success, Runnable failure) {

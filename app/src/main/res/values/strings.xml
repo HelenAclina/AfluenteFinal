@@ -14,7 +14,7 @@
     <string name="dashboard_water_goal_unavailable">Meta de água não configurada</string>
     <string name="dashboard_energy_goal_unavailable">Meta de energia não configurada</string>
     <string name="dashboard_quick_access">Acesso rápido</string>
-    <string name="dashboard_history">Histórico</string>
+    <string name="dashboard_history">Meus registros</string>
     <string name="dashboard_compare">Comparar</string>
     <string name="dashboard_alerts">Alertas</string>
     <string name="alerts_title">Alertas</string>
