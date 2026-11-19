@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Acesso rápido e "Meus registros" (antes "Histórico") -->
+    <string name="quick_register">Registrar</string>
+    <string name="quick_register_description">Registrar consumo</string>
+    <string name="dashboard_history_description">Meus registros: ver, editar e excluir lançamentos</string>
+    <string name="history_subtitle">Use ✏️ para editar e 🗑️ para excluir um lançamento.</string>
+
+    <!-- Ajuda "onde encontro na conta?" -->
+    <string name="bill_help_open">Onde encontro na conta?</string>
+    <string name="bill_help_close">Entendi</string>
+    <string name="bill_help_water_title">Na conta de água</string>
+    <string name="bill_help_energy_title">Na conta de energia</string>
+    <string name="bill_help_illustration">Ilustração de exemplo, sem dados reais. Os nomes dos campos podem variar conforme a concessionária.</string>
+</resources>

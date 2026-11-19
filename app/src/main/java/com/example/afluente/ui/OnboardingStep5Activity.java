@@ -57,6 +57,8 @@ public class OnboardingStep5Activity extends AppCompatActivity {
         }
         FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelTarifaAgua));
         FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelTarifaEnergia));
+        AjudaConta.anexar(findViewById(R.id.labelTarifaAgua), () -> false, AjudaConta.Campo.TARIFA);
+        AjudaConta.anexar(findViewById(R.id.labelTarifaEnergia), () -> true, AjudaConta.Campo.TARIFA);
         form = new FormularioValidado(findViewById(R.id.btnConcluirConfiguracao))
                 .campo(water, waterLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro)
                 .campo(energy, energyLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro);

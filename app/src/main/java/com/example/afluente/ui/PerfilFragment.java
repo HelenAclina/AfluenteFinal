@@ -322,19 +322,23 @@ public class PerfilFragment extends Fragment {
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(water ? "Tarifa de água (R$/m³)" : "Tarifa de energia (R$/kWh)")
                 .setMessage("A nova tarifa será usada nos próximos registros e nas estimativas do painel. Os custos já gravados nos registros e nos relatórios não serão alterados.")
-                .setView(wrap).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            BigDecimal parsed = CampoDecimal.ler(field, ValorDecimal.Regra.TARIFA);
-            if (parsed == null) return;
-            double value = parsed.doubleValue();
-            ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            update(changes, () -> {
-                if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
-                text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
-                dialog.dismiss(); toast("Tarifa atualizada.");
-            }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
-        }));
+                .setView(wrap).setNegativeButton("Cancelar", null).setNeutralButton(R.string.bill_help_open, null).setPositiveButton("Salvar", null).create();
+        dialog.setOnShowListener(ignored -> {
+            // "Onde encontro na conta?" abre a ajuda sem fechar o diálogo da tarifa.
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> AjudaConta.mostrar(requireContext(), !water, AjudaConta.Campo.TARIFA));
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                BigDecimal parsed = CampoDecimal.ler(field, ValorDecimal.Regra.TARIFA);
+                if (parsed == null) return;
+                double value = parsed.doubleValue();
+                ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                update(changes, () -> {
+                    if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
+                    text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
+                    dialog.dismiss(); toast("Tarifa atualizada.");
+                }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
+            });
+        });
         dialog.show();
         validar(dialog, field, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro);
     }

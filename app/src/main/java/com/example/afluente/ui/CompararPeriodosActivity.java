@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.afluente.R;
+import com.example.afluente.service.TextoVariacao;
 import com.example.afluente.data.ComparacaoDAO;
 import com.example.afluente.data.DatabaseHelper;
 import com.github.mikephil.charting.charts.BarChart;
@@ -154,7 +155,8 @@ public class CompararPeriodosActivity extends AppCompatActivity {
                 variation.setTextColor(ContextCompat.getColor(this, R.color.onboarding_muted));
                 return;
             }
-            variation.setText(String.format(locale, "%s %.1f%%", change > 0 ? "↑" : change < 0 ? "↓" : "=", Math.abs(change)));
+            // Frase explicativa no lugar de só "↓ 12,5%".
+            variation.setText(TextoVariacao.periodos(a, b, label1, label2));
             variation.setTextColor(ContextCompat.getColor(this, change > 0 ? R.color.alert_red_text : change < 0 ? R.color.alert_green_text : R.color.onboarding_muted));
         }
     }

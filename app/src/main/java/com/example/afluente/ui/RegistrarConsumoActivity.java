@@ -4,6 +4,7 @@ import com.example.afluente.service.ConsumoService;
 import com.example.afluente.service.ValorDecimal;
 
 import android.app.DatePickerDialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
 import com.example.afluente.model.RegistroConsumo;
@@ -11,10 +12,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.afluente.R;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.data.RegistroConsumoDAO;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -64,6 +67,7 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
         updateResource(toggle.getCheckedButtonId());
         findViewById(R.id.btnSalvarRegistro).setOnClickListener(v -> save());
         FormularioValidado.marcarObrigatorio((TextView) findViewById(R.id.labelData));
+        AjudaConta.anexar(findViewById(R.id.labelConsumo), () -> toggle.getCheckedButtonId() == R.id.btnTabEnergia, AjudaConta.Campo.CONSUMO);
         form = new FormularioValidado(findViewById(R.id.btnSalvarRegistro))
                 .campo(dateField, dateLayout, this::erroData)
                 .campo(amountField, amountLayout, t -> ValorDecimal.validar(t, ValorDecimal.Regra.CONSUMO).erro);
@@ -105,8 +109,26 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
         TextView label = findViewById(R.id.labelConsumo);
         label.setText(energy ? R.string.register_energy_label : R.string.register_water_label);
         FormularioValidado.marcarObrigatorio(label);
+        AjudaConta.atualizarDescricao(label);
+        aplicarCorDoRecurso(energy);
         amountLayout.setSuffixText(energy ? "kWh" : "m³");
         amountField.setHint(energy ? R.string.register_energy_hint : R.string.register_water_hint);
+    }
+
+    /**
+     * Cor de contexto: azul para água, amarelo para energia (botão Salvar e contorno do valor).
+     * Sobre o amarelo o texto é escuro, para manter contraste legível.
+     */
+    private void aplicarCorDoRecurso(boolean energy) {
+        int fundo = ContextCompat.getColor(this, energy ? R.color.energy_accent : R.color.brand_deep_blue);
+        int texto = energy ? ContextCompat.getColor(this, R.color.on_energy_accent) : android.graphics.Color.WHITE;
+        int desativadoFundo = ContextCompat.getColor(this, R.color.onboarding_border);
+        int desativadoTexto = ContextCompat.getColor(this, R.color.onboarding_muted);
+        int[][] estados = {{-android.R.attr.state_enabled}, {}};
+        MaterialButton salvar = findViewById(R.id.btnSalvarRegistro);
+        salvar.setBackgroundTintList(new ColorStateList(estados, new int[]{desativadoFundo, fundo}));
+        salvar.setTextColor(new ColorStateList(estados, new int[]{desativadoTexto, texto}));
+        amountLayout.setBoxStrokeColor(fundo);
     }
 
     /** Regra do campo de data (DD/MM/AAAA), usada na validação enquanto preenche. */

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texto escuro sobre o amarelo: branco teria contraste de ~2:1 (WCAG pede 4,5:1). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_checked="true" android:color="@color/on_energy_accent"/><item android:color="@color/onboarding_muted"/></selector>

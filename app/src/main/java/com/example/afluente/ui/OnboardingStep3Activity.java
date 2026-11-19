@@ -49,6 +49,8 @@ public class OnboardingStep3Activity extends AppCompatActivity {
                 .campo(water, waterLayout, opcional)
                 .campo(energy, energyLayout, opcional)
                 .condicao(() -> unknown.isChecked() || !value(water).isEmpty() || !value(energy).isEmpty());
+        AjudaConta.anexar(findViewById(R.id.labelAgua), () -> false, AjudaConta.Campo.CONSUMO);
+        AjudaConta.anexar(findViewById(R.id.labelEnergia), () -> true, AjudaConta.Campo.CONSUMO);
         unknown.setOnCheckedChangeListener((button, checked) -> setUnknown(checked));
         setUnknown(unknown.isChecked());
         findViewById(R.id.btnVoltar).setOnClickListener(v -> returnToPreviousStep());
