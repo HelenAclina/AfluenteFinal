@@ -22,17 +22,17 @@
     <string name="alerts_error">Não foi possível carregar as notificações.</string>
     <plurals name="alerts_count"><item quantity="one">%d notificação</item><item quantity="other">%d notificações</item></plurals>
     <string name="register_consumption">Registrar consumo</string>
-    <string name="register_subtitle">Adicione seu consumo diário</string>
+    <string name="register_subtitle">Copie o consumo do mês que aparece na sua conta de água ou de luz</string>
     <string name="register_date">DATA</string>
     <string name="register_date_hint">DD/MM/AAAA</string>
     <string name="register_date_accessible">Selecione a data do registro</string>
-    <string name="register_water_label">CONSUMO (M³)</string>
-    <string name="register_energy_label">CONSUMO (KWH)</string>
-    <string name="register_water_hint">Ex: 2,5</string>
-    <string name="register_energy_hint">Ex: 58</string>
-    <string name="register_consumption_value">Valor do consumo</string>
+    <string name="register_water_label">CONSUMO DO MÊS (M³)</string>
+    <string name="register_energy_label">CONSUMO DO MÊS (KWH)</string>
+    <string name="register_water_hint">Ex: 12</string>
+    <string name="register_energy_hint">Ex: 150</string>
+    <string name="register_consumption_value">Consumo do mês, conforme a conta</string>
     <string name="register_observation">OBSERVAÇÃO (OPCIONAL)</string>
-    <string name="register_observation_hint">Ex: Lavagem de roupa, AC ligado...</string>
+    <string name="register_observation_hint">Ex: Conta de outubro, mês com visitas...</string>
     <string name="register_save">Salvar registro</string>
     <string name="notification_channel_alerts">Alertas de consumo</string>
     <string name="notification_channel_alerts_description">Avisos de meta ultrapassada e de aumento anormal no consumo de água e energia.</string>
