@@ -13,9 +13,7 @@ import java.util.Locale;
 public final class AlertaService {
     private AlertaService() { }
     // Evita classificar erros mínimos da soma em ponto flutuante como excesso real.
-    public static boolean excedeu(double consumo, double meta) {
-        return consumo > meta && consumo - meta > Math.max(1e-12, 16 * Math.ulp(Math.max(Math.abs(consumo), Math.abs(meta))));
-    }
+    public static boolean excedeu(double consumo, double meta) { return StatusMeta.excedeu(consumo, meta); }
     public static String mesAtual() { return new SimpleDateFormat("yyyy-MM", Locale.ROOT).format(new Date()); }
     public static void verificarMetas(SQLiteDatabase db, String uid) {
         String month = mesAtual();

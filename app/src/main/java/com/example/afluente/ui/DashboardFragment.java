@@ -27,6 +27,7 @@ import com.example.afluente.data.PerfilDAO;
 import com.example.afluente.service.FotoPerfilService;
 import com.example.afluente.service.DashboardService;
 import com.example.afluente.service.AlertaService;
+import com.example.afluente.service.StatusMeta;
 import com.example.afluente.service.TextoVariacao;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -35,7 +36,6 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -51,7 +51,6 @@ public class DashboardFragment extends Fragment {
     private DashboardService service;
     private DatabaseHelper helper;
     private View root;
-    private DashboardDAO.Snapshot lastData;
     private final Locale locale = new Locale("pt", "BR");
     private ExecutorService avatarExecutor;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -90,7 +89,7 @@ public class DashboardFragment extends Fragment {
             startActivity(intent);
         });
         view.findViewById(R.id.fabAdicionarConsumo).setOnClickListener(v -> openConsumption());
-        view.findViewById(R.id.tvAlertCount).setOnClickListener(v -> openAlerts());
+        view.findViewById(R.id.btnAlertas).setOnClickListener(v -> openAlerts());
         view.findViewById(R.id.cardAlertaConsumo).setOnClickListener(v -> openAlerts());
         view.findViewById(R.id.atalhoRegistrar).setOnClickListener(v -> openConsumption());
         view.findViewById(R.id.atalhoMetas).setOnClickListener(v -> startActivity(new Intent(requireContext(), MetasConsumoActivity.class)));
@@ -99,11 +98,11 @@ public class DashboardFragment extends Fragment {
         view.findViewById(R.id.btnVerMetas).setOnClickListener(v -> startActivity(new Intent(requireContext(), MetasConsumoActivity.class)));
         BottomNavigationView navigation = view.findViewById(R.id.bottomNavigation);
         navigation.setOnItemSelectedListener(item -> Navegacao.abrir(requireActivity(), item.getItemId()));
-        MaterialButtonToggleGroup chartToggle = view.findViewById(R.id.toggleGrafico);
-        chartToggle.addOnButtonCheckedListener((group, id, checked) -> { if (checked && lastData != null) renderChart(lastData); });
-        LineChart chart = view.findViewById(R.id.chartEvolucaoMensal);
-        chart.setNoDataText("Nenhum consumo registrado ainda.");
-        chart.setNoDataTextColor(ContextCompat.getColor(requireContext(), R.color.onboarding_muted));
+        for (int id : new int[]{R.id.chartAgua, R.id.chartEnergia}) {
+            LineChart chart = view.findViewById(id);
+            chart.setNoDataText("Nenhum consumo registrado ainda.");
+            chart.setNoDataTextColor(ContextCompat.getColor(requireContext(), R.color.onboarding_muted));
+        }
         helper = new DatabaseHelper(requireContext().getApplicationContext());
         service = new DashboardService(new DashboardDAO(helper));
     }
@@ -157,7 +156,6 @@ public class DashboardFragment extends Fragment {
     }
 
     private void render(DashboardDAO.Snapshot data) {
-        lastData = data;
         text(R.id.tvAguaMes).setText("💧 Água · " + data.months[5]);
         text(R.id.tvEnergiaMes).setText("⚡ Energia · " + data.months[5]);
         text(R.id.tvConsumoAgua).setText(data.hasWater[5] ? number(data.water[5]) + " m³" : "— m³");
@@ -169,7 +167,12 @@ public class DashboardFragment extends Fragment {
         text(R.id.tvGastoEstimado).setText(cost == null ? "—" : currency.format(cost));
         // O mês atual ainda está em andamento: a frase diz "Até agora" em vez de "economizou".
         text(R.id.tvComparacaoGasto).setText(TextoVariacao.gasto(previous, cost, true));
-        text(R.id.tvAlertCount).setText("🔔 " + data.unreadCount);
+        // Sino: a bolinha mostra a quantidade só quando há alertas não lidos (9+ acima de nove).
+        TextView badge = text(R.id.tvAlertBadge);
+        badge.setVisibility(data.unreadCount > 0 ? View.VISIBLE : View.GONE);
+        badge.setText(data.unreadCount > 9 ? "9+" : String.valueOf(data.unreadCount));
+        root.findViewById(R.id.btnAlertas).setContentDescription(data.unreadCount == 0 ? "Alertas, nenhum não lido"
+                : "Alertas, " + data.unreadCount + (data.unreadCount == 1 ? " não lido" : " não lidos"));
         root.findViewById(R.id.cardAlertaConsumo).setVisibility(data.unreadCount > 0 ? View.VISIBLE : View.GONE);
         if (data.unreadCount > 0) {
             text(R.id.tvTituloAlerta).setText(data.alertTitle);
@@ -194,7 +197,10 @@ public class DashboardFragment extends Fragment {
             progress.setProgress((int) Math.min(100, percent));
             progress.setContentDescription("Progresso da meta: " + number(percent) + "%");
         }
-        progress.setIndicatorColor(ContextCompat.getColor(requireContext(), goal != null && consumption != null && AlertaService.excedeu(consumption, goal) ? R.color.alert_red_text : color));
+        // Mesmas faixas da tela de Metas: perto do limite (amarelo), acima (laranja), muito acima (vermelho).
+        StatusMeta.Nivel nivel = StatusMeta.classificar(consumption, goal);
+        boolean destacar = nivel.excedeu() || nivel == StatusMeta.Nivel.PERTO;
+        progress.setIndicatorColor(ContextCompat.getColor(requireContext(), destacar ? MetasConsumoActivity.coresDoNivel(nivel)[0] : color));
     }
 
     private Double cost(DashboardDAO.Snapshot d, int i) {
@@ -215,16 +221,23 @@ public class DashboardFragment extends Fragment {
         return format.format(n);
     }
 
+    /** Água e energia em gráficos separados, cada um na própria unidade e escala. */
     private void renderChart(DashboardDAO.Snapshot d) {
-        LineChart chart = root.findViewById(R.id.chartEvolucaoMensal);
+        renderResourceChart(R.id.chartAgua, d, d.water, d.hasWater, "m³", R.color.chart_water, "água", "metros cúbicos");
+        renderResourceChart(R.id.chartEnergia, d, d.energy, d.hasEnergy, "kWh", R.color.energy_accent, "energia", "kWh");
+    }
+
+    private void renderResourceChart(int chartId, DashboardDAO.Snapshot d, double[] values, boolean[] has, String unit,
+                                     int colorRes, String resource, String spokenUnit) {
+        LineChart chart = root.findViewById(chartId);
         chart.getDescription().setEnabled(false);
         chart.setTouchEnabled(true);
         ChartMarker.attach(chart);
         chart.getAxisRight().setEnabled(false);
         chart.getAxisLeft().setDrawGridLines(false);
+        chart.getLegend().setEnabled(false); // o título acima do gráfico já identifica recurso e unidade
         int axisColor = ContextCompat.getColor(requireContext(), R.color.onboarding_muted);
         chart.getAxisLeft().setTextColor(axisColor);
-        chart.getLegend().setTextColor(axisColor);
         XAxis x = chart.getXAxis();
         x.setTextColor(axisColor);
         x.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -234,13 +247,10 @@ public class DashboardFragment extends Fragment {
         x.setAxisMaximum(5f);
         x.setDrawGridLines(false);
         chart.getAxisLeft().setAxisMinimum(0f);
-        // Um recurso por vez, cada um na própria unidade: a água deixa de "sumir" perto da energia.
-        boolean energy = ((MaterialButtonToggleGroup) root.findViewById(R.id.toggleGrafico)).getCheckedButtonId() == R.id.graficoEnergia;
         List<com.github.mikephil.charting.interfaces.datasets.ILineDataSet> series = new ArrayList<>();
-        if (energy) addSeries(series, d.energy, d.hasEnergy, "kWh", ContextCompat.getColor(requireContext(), R.color.energy_accent), "Energia (kWh)");
-        else addSeries(series, d.water, d.hasWater, "m³", ContextCompat.getColor(requireContext(), R.color.chart_water), "Água (m³)");
-        chart.setNoDataText(energy ? "Nenhum consumo de energia registrado ainda." : "Nenhum consumo de água registrado ainda.");
-        chart.setContentDescription("Gráfico da evolução mensal de " + (energy ? "energia, em kWh" : "água, em metros cúbicos"));
+        addSeries(series, values, has, unit, ContextCompat.getColor(requireContext(), colorRes), resource);
+        chart.setNoDataText("Nenhum consumo de " + resource + " registrado ainda.");
+        chart.setContentDescription("Gráfico da evolução mensal de " + resource + ", em " + spokenUnit);
         if (series.isEmpty()) chart.clear(); else chart.setData(new LineData(series));
         chart.invalidate();
     }

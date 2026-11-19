@@ -13,12 +13,12 @@ import androidx.core.content.ContextCompat;
 import com.example.afluente.R;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.data.MetaDAO;
-import com.example.afluente.service.AlertaService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.example.afluente.service.StatusMeta;
 import com.example.afluente.service.ValorDecimal;
 
 import java.math.BigDecimal;
@@ -112,21 +112,35 @@ public class MetasConsumoActivity extends AppCompatActivity {
     }
     private void renderMetric(MetaDAO.Dados data, String unit, int tagId, int consumedId, int goalId, int progressId, int excessId, int valueId, int normalColor) {
         Double goal = data.meta, consumed = data.consumo;
-        boolean exceeded = goal != null && consumed != null && AlertaService.excedeu(consumed, goal);
+        // Faixas: dentro (≤80%), perto do limite (≤100%), acima (≤120%) e muito acima (>120%).
+        StatusMeta.Nivel nivel = StatusMeta.classificar(consumed, goal);
+        boolean exceeded = nivel.excedeu();
+        int[] cores = coresDoNivel(nivel);
         TextView tag = findViewById(tagId);
-        tag.setText(goal == null ? "Sem meta" : consumed == null ? "Sem registros" : exceeded ? "Elevado" : "Dentro da meta");
-        tag.setTextColor(ContextCompat.getColor(this, exceeded ? R.color.alert_red_text : R.color.onboarding_muted));
+        tag.setText(nivel.rotulo);
+        tag.setTextColor(ContextCompat.getColor(this, cores[0]));
         GradientDrawable bg = new GradientDrawable(); bg.setCornerRadius(20 * getResources().getDisplayMetrics().density);
-        bg.setColor(ContextCompat.getColor(this, exceeded ? R.color.alert_red_background : R.color.onboarding_selected)); tag.setBackground(bg);
+        bg.setColor(ContextCompat.getColor(this, cores[1])); tag.setBackground(bg);
         text(consumedId).setText("Consumido: " + (consumed == null ? "—" : number(consumed) + " " + unit));
         text(goalId).setText("Meta: " + (goal == null ? "—" : number(goal) + " " + unit));
         text(valueId).setText(goal == null ? "Definir meta" : number(goal) + " " + unit);
         LinearProgressIndicator progress = findViewById(progressId);
         int percentage = goal == null || consumed == null ? 0 : (int) Math.min(100, consumed / goal * 100);
-        progress.setProgress(percentage); progress.setIndicatorColor(ContextCompat.getColor(this, exceeded ? R.color.alert_red_text : normalColor));
+        progress.setProgress(percentage); progress.setIndicatorColor(ContextCompat.getColor(this, exceeded || nivel == StatusMeta.Nivel.PERTO ? cores[0] : normalColor));
         progress.setContentDescription(goal == null || consumed == null ? "Progresso indisponível" : "Progresso da meta: " + number(consumed / goal * 100) + "%");
         TextView excess = findViewById(excessId); excess.setVisibility(exceeded ? View.VISIBLE : View.GONE);
-        if (exceeded) excess.setText("Excedeu em " + number(consumed - goal) + " " + unit);
+        if (exceeded) { excess.setText(StatusMeta.textoExcesso(consumed, goal, unit)); excess.setTextColor(ContextCompat.getColor(this, cores[0])); }
+    }
+
+    /** [cor do texto, cor do fundo] da etiqueta de status. */
+    static int[] coresDoNivel(StatusMeta.Nivel nivel) {
+        switch (nivel) {
+            case DENTRO: return new int[]{R.color.alert_green_text, R.color.alert_green_background};
+            case PERTO: return new int[]{R.color.alert_yellow_text, R.color.alert_yellow_background};
+            case ACIMA: return new int[]{R.color.alert_orange_text, R.color.alert_orange_background};
+            case MUITO_ACIMA: return new int[]{R.color.alert_red_text, R.color.alert_red_background};
+            default: return new int[]{R.color.onboarding_muted, R.color.onboarding_selected};
+        }
     }
     private String number(double value) { NumberFormat f = NumberFormat.getNumberInstance(locale); f.setMaximumFractionDigits(3); return f.format(value); }
     private TextView text(int id) { return findViewById(id); }
