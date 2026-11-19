@@ -41,6 +41,8 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+import com.example.afluente.service.ValorDecimal;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -296,9 +298,7 @@ public class PerfilFragment extends Fragment {
     private void editTariff(boolean water) {
         if (perfil == null) { toast("Aguarde o carregamento do perfil."); return; }
         EditText field = new EditText(requireContext());
-        field.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        field.setKeyListener(android.text.method.DigitsKeyListener.getInstance("0123456789.,"));
-        field.setSingleLine(true);
+        CampoDecimal.configurar(field);
         Double existing = water ? perfil.tarifaAgua : perfil.tarifaEnergia;
         if (existing != null) field.setText(BigDecimal.valueOf(existing).stripTrailingZeros().toPlainString().replace('.', ','));
         android.widget.FrameLayout wrap = new android.widget.FrameLayout(requireContext());
@@ -309,20 +309,16 @@ public class PerfilFragment extends Fragment {
                 .setMessage("A nova tarifa será usada nos próximos registros e nas estimativas do painel. Os custos já gravados nos registros e nos relatórios não serão alterados.")
                 .setView(wrap).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String raw = field.getText().toString().trim();
-            try {
-                if (!raw.matches("[0-9]+([.,][0-9]+)?")) throw new NumberFormatException();
-                BigDecimal parsed = new BigDecimal(raw.replace(',', '.'));
-                double value = parsed.doubleValue();
-                if (parsed.signum() <= 0 || !Double.isFinite(value)) throw new NumberFormatException();
-                ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-                update(changes, () -> {
-                    if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
-                    text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
-                    dialog.dismiss(); toast("Tarifa atualizada.");
-                }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
-            } catch (NumberFormatException e) { field.setError("Informe um valor válido maior que zero."); }
+            BigDecimal parsed = CampoDecimal.ler(field, ValorDecimal.Regra.TARIFA);
+            if (parsed == null) return;
+            double value = parsed.doubleValue();
+            ContentValues changes = new ContentValues(); changes.put(water ? "tarifa_agua" : "tarifa_energia", value);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            update(changes, () -> {
+                if (water) perfil.tarifaAgua = value; else perfil.tarifaEnergia = value;
+                text(water ? R.id.tvTarifaAgua : R.id.tvTarifaEnergia).setText(tariff(value, water ? "m³" : "kWh"));
+                dialog.dismiss(); toast("Tarifa atualizada.");
+            }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
         }));
         dialog.show();
     }

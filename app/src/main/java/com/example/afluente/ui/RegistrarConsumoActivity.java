@@ -1,6 +1,7 @@
 package com.example.afluente.ui;
 
 import com.example.afluente.service.ConsumoService;
+import com.example.afluente.service.ValorDecimal;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
@@ -51,6 +52,7 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
         editId = getIntent().getLongExtra(EXTRA_REGISTRO_ID, -1);
         dateField = findViewById(R.id.etDataRegistro);
         amountField = findViewById(R.id.etValorConsumo);
+        CampoDecimal.configurar(amountField);
         noteField = findViewById(R.id.etObservacao);
         dateLayout = findViewById(R.id.inputData);
         amountLayout = findViewById(R.id.inputConsumo);
@@ -128,19 +130,8 @@ public class RegistrarConsumoActivity extends AppCompatActivity {
             dateLayout.setError("A data não pode ser posterior a hoje.");
             return;
         }
-        BigDecimal value;
-        try {
-            if (!raw.matches("[0-9]+([.,][0-9]+)?")) throw new NumberFormatException();
-            value = new BigDecimal(raw.replace(',', '.'));
-            if (value.signum() <= 0 || !Double.isFinite(value.doubleValue())) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            amountLayout.setError("Informe um valor válido maior que zero.");
-            return;
-        }
-        if (value.compareTo(ConsumoService.CONSUMO_MAXIMO) > 0) {
-            amountLayout.setError("Informe um valor de até 1.000.000.");
-            return;
-        }
+        BigDecimal value = CampoDecimal.ler(amountField, amountLayout, ValorDecimal.Regra.CONSUMO);
+        if (value == null) return;
         String type = toggle.getCheckedButtonId() == R.id.btnTabEnergia ? "ENERGIA" : "AGUA";
         String note = text(noteField);
         setBusy(true);

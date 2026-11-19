@@ -18,6 +18,8 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+import com.example.afluente.service.ValorDecimal;
+
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,6 +46,8 @@ public class OnboardingStep5Activity extends AppCompatActivity {
         energy = findViewById(R.id.etTarifaEnergia);
         waterLayout = findViewById(R.id.inputTarifaAgua);
         energyLayout = findViewById(R.id.inputTarifaEnergia);
+        CampoDecimal.configurar(water);
+        CampoDecimal.configurar(energy);
         if (savedInstanceState == null) {
             // Exemplos visuais, não tarifas oficiais da concessionária.
             water.setText(draft.getString(KEY_WATER_TARIFF, "5,00"));
@@ -131,17 +135,7 @@ public class OnboardingStep5Activity extends AppCompatActivity {
     }
 
     private BigDecimal parse(TextInputEditText field, TextInputLayout container) {
-        container.setError(null);
-        String text = field.getText() == null ? "" : field.getText().toString().trim();
-        try {
-            if (!text.matches("[0-9]+([.,][0-9]+)?")) throw new NumberFormatException();
-            BigDecimal value = new BigDecimal(text.replace(',', '.'));
-            if (value.signum() <= 0 || Double.isInfinite(value.doubleValue())) throw new NumberFormatException();
-            return value;
-        } catch (NumberFormatException e) {
-            container.setError(getString(R.string.invalid_tariff));
-            return null;
-        }
+        return CampoDecimal.ler(field, container, ValorDecimal.Regra.TARIFA);
     }
 
     @Override public void onBackPressed() { if (!busy) super.onBackPressed(); }
