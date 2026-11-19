@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exclusão de conta (LGPD, art. 18, VI) -->
+    <string name="delete_account">Excluir conta</string>
+    <string name="delete_account_title">Excluir sua conta?</string>
+    <string name="delete_account_message">Esta ação é permanente e não pode ser desfeita.
+
+Serão apagados:
+• sua conta de acesso (nome e e-mail);
+• neste aparelho: registros de consumo, metas, alertas, relatórios, tarifas, preferências e foto de perfil.
+
+Se você usou o AFLUENTE em outro aparelho, os dados guardados lá ficam só naquele aparelho: abra o app nele e exclua, ou desinstale o app.
+
+Arquivos CSV que você exportou continuam com você.</string>
+    <string name="delete_account_continue">Continuar</string>
+    <string name="delete_account_confirm_title">Confirme sua senha</string>
+    <string name="delete_account_confirm_message">Por segurança, digite sua senha atual para excluir a conta definitivamente.</string>
+    <string name="delete_account_confirm">Excluir definitivamente</string>
+    <string name="delete_account_done">Sua conta e seus dados foram excluídos.</string>
+    <string name="delete_account_partial">Sua conta foi excluída, mas alguns dados deste aparelho não puderam ser apagados. Para removê-los, desinstale o app.</string>
+    <string name="delete_account_wrong_password">Senha incorreta. Nada foi excluído.</string>
+    <string name="delete_account_failed">Não foi possível excluir a conta. Verifique a conexão e tente novamente. Nada foi excluído.</string>
+</resources>
