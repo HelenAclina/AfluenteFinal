@@ -73,10 +73,10 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Evolução mensal" android:textColor="@color/onboarding_text" android:textStyle="bold" android:textSize="16sp" />
                     <!-- Dois gráficos, um sobre o outro: m³ e kWh têm escalas diferentes e não cabem no mesmo eixo. -->
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="💧 Água (m³)" android:textColor="@color/chart_water" android:textStyle="bold" android:textSize="13sp" android:accessibilityHeading="true" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="💧 Água (m³)" android:textColor="@color/onboarding_text" android:textStyle="bold" android:textSize="13sp" android:accessibilityHeading="true" />
                     <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartAgua" android:layout_width="match_parent" android:layout_height="170dp" android:layout_marginTop="6dp" />
                     <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="14dp" android:background="@color/onboarding_border" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="⚡ Energia (kWh)" android:textColor="@color/energy_accent" android:textStyle="bold" android:textSize="13sp" android:accessibilityHeading="true" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="⚡ Energia (kWh)" android:textColor="@color/onboarding_text" android:textStyle="bold" android:textSize="13sp" android:accessibilityHeading="true" />
                     <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartEnergia" android:layout_width="match_parent" android:layout_height="170dp" android:layout_marginTop="6dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

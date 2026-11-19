@@ -9,6 +9,12 @@ on:
 permissions:
   contents: write
 
+# Um build novo da mesma branch cancela o anterior: assim um build mais antigo
+# nunca termina por último e sobrescreve o APK do link fixo com código velho.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

@@ -105,6 +105,7 @@ public class PerfilFragment extends Fragment {
         view.findViewById(R.id.rowTarifaEnergia).setOnClickListener(v -> editTariff(false));
         view.findViewById(R.id.btnSairConta).setOnClickListener(v -> confirmLogout());
         view.findViewById(R.id.btnExcluirConta).setOnClickListener(v -> confirmDeleteAccount());
+        ((TextView) view.findViewById(R.id.tvVersaoApp)).setText(versaoDoApp());
         SwitchMaterial notifications = view.findViewById(R.id.switchNotificacoes);
         notifications.setOnCheckedChangeListener((button, checked) -> {
             if (applying || perfil == null) return;
@@ -422,6 +423,14 @@ public class PerfilFragment extends Fragment {
                             if (!isAdded()) return;
                             toast(task.isSuccessful() ? "Se a conta permitir, as instruções serão enviadas ao seu e-mail." : "Não foi possível enviar. Verifique sua conexão e tente novamente.");
                         })).show();
+    }
+
+    /** "Versão 1.0 · a1b2c3d": o código depois do ponto é o commit do build (ajuda a saber qual APK está instalado). */
+    private String versaoDoApp() {
+        try {
+            String nome = requireContext().getPackageManager().getPackageInfo(requireContext().getPackageName(), 0).versionName;
+            return "Versão " + nome;
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) { return ""; }
     }
 
     /** LGPD, art. 18, VI: 1º passo — explica o que será apagado e que a ação é permanente. */

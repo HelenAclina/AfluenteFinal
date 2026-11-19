@@ -16,7 +16,9 @@ android {
         minSdk = 25
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        // No GitHub Actions, inclui o commit no nome da versão (ex.: "1.0 · a1b2c3d"),
+        // exibido no Perfil para saber qual APK está instalado.
+        versionName = "1.0" + (System.getenv("GITHUB_SHA")?.take(7)?.let { " · $it" } ?: " · local")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
