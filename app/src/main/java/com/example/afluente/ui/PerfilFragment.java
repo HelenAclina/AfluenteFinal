@@ -29,6 +29,7 @@ import com.example.afluente.MainActivity;
 import com.example.afluente.R;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.data.PerfilDAO;
+import com.example.afluente.service.ExclusaoContaService;
 import com.example.afluente.service.FotoPerfilService;
 import com.example.afluente.service.NotificacaoService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -36,6 +37,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -102,6 +104,7 @@ public class PerfilFragment extends Fragment {
         view.findViewById(R.id.rowTarifaAgua).setOnClickListener(v -> editTariff(true));
         view.findViewById(R.id.rowTarifaEnergia).setOnClickListener(v -> editTariff(false));
         view.findViewById(R.id.btnSairConta).setOnClickListener(v -> confirmLogout());
+        view.findViewById(R.id.btnExcluirConta).setOnClickListener(v -> confirmDeleteAccount());
         SwitchMaterial notifications = view.findViewById(R.id.switchNotificacoes);
         notifications.setOnCheckedChangeListener((button, checked) -> {
             if (applying || perfil == null) return;
@@ -419,6 +422,85 @@ public class PerfilFragment extends Fragment {
                             if (!isAdded()) return;
                             toast(task.isSuccessful() ? "Se a conta permitir, as instruções serão enviadas ao seu e-mail." : "Não foi possível enviar. Verifique sua conexão e tente novamente.");
                         })).show();
+    }
+
+    /** LGPD, art. 18, VI: 1º passo — explica o que será apagado e que a ação é permanente. */
+    private void confirmDeleteAccount() {
+        if (user == null) return;
+        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.delete_account_title)
+                .setMessage(R.string.delete_account_message)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton(R.string.delete_account_continue, (d, w) -> requestPasswordForDeletion())
+                .show();
+    }
+
+    /**
+     * 2º passo — senha atual. Ordem: reautenticar → excluir no Firebase Auth → apagar os dados
+     * do aparelho. Se algo falhar antes da exclusão remota, nada é apagado.
+     */
+    private void requestPasswordForDeletion() {
+        String email = user.getEmail();
+        if (email == null || email.isEmpty()) { toast("Saia e entre novamente para confirmar sua identidade."); return; }
+        EditText password = dialogField(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD, null);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.delete_account_confirm_title)
+                .setMessage(R.string.delete_account_confirm_message)
+                .setView(fieldContainer(password)).setNegativeButton("Cancelar", null)
+                .setPositiveButton(R.string.delete_account_confirm, null).create();
+        final Context app = requireContext().getApplicationContext();
+        dialog.setOnShowListener(ignored -> {
+            android.widget.Button confirm = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            confirm.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.alert_red_text));
+            confirm.setOnClickListener(v -> {
+                String secret = password.getText().toString();
+                if (secret.isEmpty()) { password.setError("Informe sua senha."); return; }
+                setDeleting(dialog, password, true);
+                final View view = root;
+                final FirebaseUser account = user;
+                final String uid = account.getUid();
+                account.reauthenticate(EmailAuthProvider.getCredential(email, secret)).addOnCompleteListener(auth -> {
+                    password.setText(""); // não manter a senha na memória da tela
+                    if (!auth.isSuccessful()) {
+                        if (root == view) setDeleting(dialog, password, false);
+                        Toast.makeText(app, auth.getException() instanceof FirebaseAuthInvalidCredentialsException
+                                ? R.string.delete_account_wrong_password : R.string.delete_account_failed, Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    account.delete().addOnCompleteListener(deletion -> {
+                        if (!deletion.isSuccessful()) {
+                            if (root == view) setDeleting(dialog, password, false);
+                            Toast.makeText(app, R.string.delete_account_failed, Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        // Conta remota excluída: apaga os dados deste aparelho fora da thread principal.
+                        new Thread(() -> {
+                            boolean local = ExclusaoContaService.apagarDadosDoAparelho(app, uid);
+                            main.post(() -> finishDeletion(app, dialog, local));
+                        }, "afluente-exclusao-conta").start();
+                    });
+                });
+            });
+        });
+        dialog.show();
+        validar(dialog, password, RegrasFormulario::senhaInformada);
+    }
+
+    private void setDeleting(AlertDialog dialog, EditText password, boolean deleting) {
+        dialog.setCancelable(!deleting);
+        password.setEnabled(!deleting);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(!deleting);
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!deleting && password.length() > 0);
+    }
+
+    /** 3º passo — encerra a sessão e volta para a tela inicial, sem possibilidade de voltar ao Perfil. */
+    private void finishDeletion(Context app, AlertDialog dialog, boolean localOk) {
+        if (dialog.isShowing()) dialog.dismiss();
+        FirebaseAuth.getInstance().signOut();
+        OnboardingSession.clear();
+        Toast.makeText(app, localOk ? R.string.delete_account_done : R.string.delete_account_partial, Toast.LENGTH_LONG).show();
+        Intent intent = new Intent(app, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        app.startActivity(intent);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
     }
 
     private void confirmLogout() {

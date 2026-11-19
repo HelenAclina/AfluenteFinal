@@ -125,6 +125,12 @@ public final class FotoPerfilService {
         try { return decode(file, targetSize); }
         catch (RuntimeException | OutOfMemoryError e) { return null; }
     }
+    /** Apaga o arquivo da foto de perfil (usado na exclusão da conta). Só remove fotos do diretório do app. */
+    public static boolean excluir(Context context, String path) {
+        File file = privatePhoto(context, path);
+        return file == null || !file.exists() || file.delete();
+    }
+
     private static File privatePhoto(Context context, String path) {
         if (path == null || path.isEmpty()) return null;
         try {
