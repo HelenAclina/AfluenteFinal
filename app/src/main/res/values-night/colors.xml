@@ -19,4 +19,6 @@
     <color name="compare_period_two">#B1CDF5</color>
     <color name="residence_card_selected_border">#91BDF5</color>
     <color name="chart_water">#91BDF5</color>
+    <color name="quick_icon_background">#2A3B52</color>
+    <color name="alert_orange_background">#4D2E1C</color><color name="alert_orange_text">#FFB38A</color>
 </resources>

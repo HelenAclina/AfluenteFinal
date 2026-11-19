@@ -27,6 +27,7 @@ import com.example.afluente.data.PerfilDAO;
 import com.example.afluente.service.FotoPerfilService;
 import com.example.afluente.service.DashboardService;
 import com.example.afluente.service.AlertaService;
+import com.example.afluente.service.StatusMeta;
 import com.example.afluente.service.TextoVariacao;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
@@ -191,7 +192,10 @@ public class DashboardFragment extends Fragment {
             progress.setProgress((int) Math.min(100, percent));
             progress.setContentDescription("Progresso da meta: " + number(percent) + "%");
         }
-        progress.setIndicatorColor(ContextCompat.getColor(requireContext(), goal != null && consumption != null && AlertaService.excedeu(consumption, goal) ? R.color.alert_red_text : color));
+        // Mesmas faixas da tela de Metas: perto do limite (amarelo), acima (laranja), muito acima (vermelho).
+        StatusMeta.Nivel nivel = StatusMeta.classificar(consumption, goal);
+        boolean destacar = nivel.excedeu() || nivel == StatusMeta.Nivel.PERTO;
+        progress.setIndicatorColor(ContextCompat.getColor(requireContext(), destacar ? MetasConsumoActivity.coresDoNivel(nivel)[0] : color));
     }
 
     private Double cost(DashboardDAO.Snapshot d, int i) {

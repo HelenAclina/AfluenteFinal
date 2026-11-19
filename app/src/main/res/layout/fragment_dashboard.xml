@@ -16,25 +16,25 @@
                 <LinearLayout android:id="@+id/acessosRapidos" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:orientation="horizontal">
                     <com.google.android.material.card.MaterialCardView android:id="@+id/atalhoRegistrar" style="@style/Afluente.Card" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:clickable="true" android:focusable="true" android:contentDescription="@string/quick_register_description">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:paddingHorizontal="2dp" android:importantForAccessibility="noHideDescendants">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="➕" android:textSize="20sp" />
+                            <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="8dp" android:background="@drawable/bg_atalho_destaque" android:src="@drawable/ic_atalho_registrar" android:importantForAccessibility="no" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:maxLines="2" android:text="@string/quick_register" android:textColor="@color/onboarding_muted" android:textSize="11sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                     <com.google.android.material.card.MaterialCardView android:id="@+id/atalhoHistorico" style="@style/Afluente.Card" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:clickable="true" android:focusable="true" android:contentDescription="@string/dashboard_history_description" android:layout_marginStart="8dp">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:paddingHorizontal="2dp" android:importantForAccessibility="noHideDescendants">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📋" android:textSize="20sp" />
+                            <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="8dp" android:background="@drawable/bg_atalho_circulo" android:src="@drawable/ic_atalho_registros" android:importantForAccessibility="no" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:maxLines="2" android:text="@string/dashboard_history" android:textColor="@color/onboarding_muted" android:textSize="11sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                     <com.google.android.material.card.MaterialCardView android:id="@+id/atalhoMetas" style="@style/Afluente.Card" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:clickable="true" android:focusable="true" android:contentDescription="@string/dashboard_goals" android:layout_marginStart="8dp">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:paddingHorizontal="2dp" android:importantForAccessibility="noHideDescendants">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🎯" android:textSize="20sp" />
+                            <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="8dp" android:background="@drawable/bg_atalho_circulo" android:src="@drawable/ic_atalho_metas" android:importantForAccessibility="no" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:maxLines="2" android:text="@string/dashboard_goals" android:textColor="@color/onboarding_muted" android:textSize="11sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                     <com.google.android.material.card.MaterialCardView android:id="@+id/atalhoComparar" style="@style/Afluente.Card" android:layout_width="0dp" android:layout_height="80dp" android:layout_weight="1" android:clickable="true" android:focusable="true" android:contentDescription="@string/dashboard_compare" android:layout_marginStart="8dp">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical" android:paddingHorizontal="2dp" android:importantForAccessibility="noHideDescendants">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📊" android:textSize="20sp" />
+                            <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="8dp" android:background="@drawable/bg_atalho_circulo" android:src="@drawable/ic_atalho_comparar" android:importantForAccessibility="no" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:maxLines="2" android:text="@string/dashboard_compare" android:textColor="@color/onboarding_muted" android:textSize="11sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
