@@ -361,48 +361,6 @@ public class PerfilFragment extends Fragment {
         });
     }
 
-    /** Ao ativar a preferência, garante que o Android também permite exibir as notificações. */
-    private void garantirPermissaoNotificacoes() {
-        Context context = requireContext();
-        if (!NotificacaoService.temPermissao(context) && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
-        } else if (!NotificacaoService.podeNotificar(context)) {
-            avisarNotificacoesBloqueadas();
-        } else {
-            enviarAlertasPendentes();
-        }
-    }
-
-    /** Permissão negada ou notificações desligadas no sistema: oferece abrir as configurações do app. */
-    private void avisarNotificacoesBloqueadas() {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setMessage(R.string.notification_permission_denied)
-                .setNegativeButton("Agora não", null)
-                .setPositiveButton(R.string.notification_open_settings, (d, w) -> {
-                    Intent intent;
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        intent = new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
-                    } else {
-                        intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", requireContext().getPackageName(), null));
-                    }
-                    startActivity(intent);
-                }).show();
-    }
-
-    private void enviarAlertasPendentes() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
-        Context context = requireContext().getApplicationContext();
-        String uid = user.getUid();
-        if (executor == null || executor.isShutdown()) return;
-        executor.execute(() -> {
-            DatabaseHelper helper = new DatabaseHelper(context);
-            try { NotificacaoService.enviarPendentes(context, helper, uid); } finally { helper.close(); }
-        });
-    }
-
     private void editTariff(boolean water) {
         if (perfil == null) { toast("Aguarde o carregamento do perfil."); return; }
         EditText field = new EditText(requireContext());
