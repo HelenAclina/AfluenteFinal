@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
-import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +40,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.UserProfileChangeRequest;
 
+import com.example.afluente.service.RegrasFormulario;
 import com.example.afluente.service.ValorDecimal;
 
 import java.math.BigDecimal;
@@ -184,6 +184,13 @@ public class PerfilFragment extends Fragment {
         return field;
     }
 
+    /** Padrão de formulário nos diálogos: "Salvar" só fica ativo com o campo válido. */
+    private FormularioValidado validar(AlertDialog dialog, EditText field, FormularioValidado.Regra regra) {
+        FormularioValidado form = new FormularioValidado(dialog.getButton(AlertDialog.BUTTON_POSITIVE)).campo(field, regra);
+        dialog.setOnDismissListener(d -> form.liberar());
+        return form;
+    }
+
     private android.widget.FrameLayout fieldContainer(EditText field) {
         android.widget.FrameLayout container = new android.widget.FrameLayout(requireContext());
         int pad = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
@@ -199,7 +206,8 @@ public class PerfilFragment extends Fragment {
                 .setView(fieldContainer(field)).setNegativeButton("Cancelar", null).setPositiveButton("Salvar", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String name = field.getText().toString().trim();
-            if (name.isEmpty() || name.length() > 100) { field.setError("Informe um nome de até 100 caracteres."); return; }
+            String erroNome = RegrasFormulario.nome(name);
+            if (erroNome != null) { field.setError(erroNome); return; }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             final View view = root;
             UserProfileChangeRequest request = new UserProfileChangeRequest.Builder().setDisplayName(name).build();
@@ -227,6 +235,7 @@ public class PerfilFragment extends Fragment {
             });
         }));
         dialog.show();
+        validar(dialog, field, RegrasFormulario::nome);
     }
 
     private void editEmail() {
@@ -236,12 +245,17 @@ public class PerfilFragment extends Fragment {
                 .setView(fieldContainer(field)).setNegativeButton("Cancelar", null).setPositiveButton("Enviar link", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String email = field.getText().toString().trim();
-            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) { field.setError("Informe um e-mail válido."); return; }
+            String erroEmail = RegrasFormulario.email(email);
+            if (erroEmail != null) { field.setError(erroEmail); return; }
             if (email.equalsIgnoreCase(user.getEmail())) { field.setError("Informe um e-mail diferente do atual."); return; }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             sendEmailVerification(email, dialog, false);
         }));
         dialog.show();
+        validar(dialog, field, t -> {
+            String erro = RegrasFormulario.email(t);
+            return erro == null && t.trim().equalsIgnoreCase(user.getEmail()) ? "Informe um e-mail diferente do atual." : erro;
+        });
     }
 
     private void sendEmailVerification(String email, AlertDialog dialog, boolean reauthenticated) {
@@ -293,6 +307,7 @@ public class PerfilFragment extends Fragment {
             });
         }));
         dialog.show();
+        validar(dialog, password, RegrasFormulario::senhaInformada);
     }
 
     private void editTariff(boolean water) {
@@ -321,6 +336,7 @@ public class PerfilFragment extends Fragment {
             }, () -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true));
         }));
         dialog.show();
+        validar(dialog, field, t -> ValorDecimal.validar(t, ValorDecimal.Regra.TARIFA).erro);
     }
 
     private void update(ContentValues changes, Runnable success, Runnable failure) {

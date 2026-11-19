@@ -27,6 +27,7 @@ public class OnboardingStep4Activity extends AppCompatActivity {
             "EVITAR_DESPERDICIOS", "HABITOS_SUSTENTAVEIS"};
     private final Set<String> selected = new HashSet<>();
     private SharedPreferences draft;
+    private FormularioValidado form;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,10 +47,13 @@ public class OnboardingStep4Activity extends AppCompatActivity {
                 updateCard(card, checked);
                 // Copiar o Set evita alterar a coleção armazenada pelo SharedPreferences.
                 draft.edit().putStringSet(KEY_OBJECTIVES, new HashSet<>(selected)).apply();
+                if (form != null) form.reavaliar();
             });
             card.setOnClickListener(v -> check.toggle());
         }
         findViewById(R.id.btnVoltar).setOnClickListener(v -> finish());
+        // Continuar só fica ativo com ao menos um objetivo marcado.
+        form = new FormularioValidado(findViewById(R.id.btnContinuar)).condicao(() -> !selected.isEmpty());
         findViewById(R.id.btnContinuar).setOnClickListener(v -> {
             if (selected.isEmpty()) {
                 Toast.makeText(this, R.string.select_goal, Toast.LENGTH_SHORT).show();

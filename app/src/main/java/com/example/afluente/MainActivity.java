@@ -13,7 +13,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.InputType;
-import android.util.Patterns;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -28,6 +27,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.example.afluente.data.ConfiguracaoUsuarioDAO;
 import com.example.afluente.data.DatabaseHelper;
 import com.example.afluente.ui.EdgeInsets;
+import com.example.afluente.ui.FormularioValidado;
+import com.example.afluente.service.RegrasFormulario;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean busy;
     private EditText email;
     private EditText password;
+    private FormularioValidado loginForm;
     private Button loginButton;
     // Dados mantidos apenas em memória enquanto o cadastro está em andamento.
     private String draftName = "", draftEmail = "", draftPassword = "";
@@ -101,10 +103,10 @@ public class MainActivity extends AppCompatActivity {
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(24), dp(30), dp(24), dp(24));
         page.addView(form);
-        form.addView(text("E-MAIL", 12, getColor(R.color.onboarding_muted), true));
+        form.addView(requiredLabel("E-MAIL"));
         email = input("Digite seu e-mail", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         addWithMargins(form, email, 46, 8, 20);
-        form.addView(text("SENHA", 12, getColor(R.color.onboarding_muted), true));
+        form.addView(requiredLabel("SENHA"));
 
         LinearLayout passwordBox = new LinearLayout(this);
         passwordBox.setGravity(Gravity.CENTER_VERTICAL);
@@ -133,12 +135,18 @@ public class MainActivity extends AppCompatActivity {
         loginButton = button("Entrar", true);
         loginButton.setOnClickListener(v -> signIn());
         addWithMargins(form, loginButton, 52, 28, 18);
+        loginForm = new FormularioValidado(loginButton)
+                .campo(email, RegrasFormulario::email)
+                .campo(password, RegrasFormulario::senhaInformada);
         View divider = new View(this);
         divider.setBackgroundColor(getColor(R.color.onboarding_border));
         form.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
         Button create = button("Criar uma conta", false);
         create.setOnClickListener(v -> showSignUp());
         addWithMargins(form, create, 52, 18, 0);
+        LinearLayout.LayoutParams legendParams = new LinearLayout.LayoutParams(-1, -2);
+        legendParams.topMargin = dp(14);
+        form.addView(requiredLegend(), legendParams);
         setContentView(scroll);
         EdgeInsets.aplicar(this);
     }
@@ -194,37 +202,31 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(-1, -2);
         subParams.setMargins(0, dp(4), 0, dp(23));
         form.addView(subtitle, subParams);
-        form.addView(text("NOME COMPLETO", 12, getColor(R.color.onboarding_muted), true));
+        form.addView(requiredLabel("NOME COMPLETO"));
         EditText name = input("Digite seu nome completo", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_VARIATION_PERSON_NAME);
         name.setText(draftName);
         addWithMargins(form, name, 46, 7, 15);
-        form.addView(text("E-MAIL", 12, getColor(R.color.onboarding_muted), true));
+        form.addView(requiredLabel("E-MAIL"));
         EditText signupEmail = input("Digite seu email", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         signupEmail.setText(draftEmail);
         addWithMargins(form, signupEmail, 46, 7, 15);
-        form.addView(text("SENHA", 12, getColor(R.color.onboarding_muted), true));
+        form.addView(requiredLabel("SENHA"));
         EditText signupPassword = input("Digite sua senha", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         signupPassword.setText(draftPassword);
-        addWithMargins(form, signupPassword, 46, 7, 15);
-        form.addView(text("CONFIRMAR SENHA", 12, getColor(R.color.onboarding_muted), true));
+        addWithMargins(form, signupPassword, 46, 7, 6);
+        addPasswordStrength(form, signupPassword);
+        form.addView(requiredLabel("CONFIRMAR SENHA"));
         EditText confirm = input("Confirme sua senha", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         confirm.setText(draftPassword);
         addWithMargins(form, confirm, 46, 7, 0);
         Button next = button("Continuar", true);
+        FormularioValidado signupForm = new FormularioValidado(next)
+                .campo(name, RegrasFormulario::nome)
+                .campo(signupEmail, RegrasFormulario::email)
+                .campo(signupPassword, RegrasFormulario::senhaNova)
+                .campo(confirm, t -> RegrasFormulario.confirmacao(signupPassword.getText().toString(), t));
         next.setOnClickListener(v -> {
-            if (name.getText().toString().trim().isEmpty()) {
-                name.setError("Informe seu nome completo.");
-                name.requestFocus();
-            } else if (!Patterns.EMAIL_ADDRESS.matcher(signupEmail.getText().toString().trim()).matches()) {
-                signupEmail.setError("Informe um e-mail válido.");
-                signupEmail.requestFocus();
-            } else if (signupPassword.length() < 6) {
-                signupPassword.setError("A senha deve ter pelo menos 6 caracteres.");
-                signupPassword.requestFocus();
-            } else if (!signupPassword.getText().toString().equals(confirm.getText().toString())) {
-                confirm.setError("As senhas não coincidem.");
-                confirm.requestFocus();
-            } else {
+            if (signupForm.validarTudo()) {
                 draftName = name.getText().toString().trim();
                 draftEmail = signupEmail.getText().toString().trim();
                 draftPassword = signupPassword.getText().toString();
@@ -239,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         addWithMargins(form, next, 52, 22, 12);
+        form.addView(requiredLegend());
         TextView enter = text("Já tem uma conta? Entrar", 13, 0xFF5684C3, false);
         enter.setGravity(Gravity.CENTER);
         enter.setPadding(0, dp(4), 0, dp(8));
@@ -279,14 +282,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         busy = true;
-        loginButton.setEnabled(false);
+        loginForm.setOcupado(true);
         FirebaseAuth.getInstance().signInWithEmailAndPassword(email.getText().toString().trim(), secret)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful() && task.getResult() != null && task.getResult().getUser() != null) {
                         openDashboard(task.getResult().getUser());
                     } else {
                         busy = false;
-                        loginButton.setEnabled(true);
+                        loginForm.setOcupado(false);
                         toast("Não foi possível entrar. Confira seus dados e sua conexão.");
                     }
                 });
@@ -330,10 +333,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean validEmail() {
-        if (!Patterns.EMAIL_ADDRESS.matcher(email.getText().toString().trim()).matches()) {
-            email.setError("Informe um e-mail válido.");
-            return false;
-        }
+        String erro = RegrasFormulario.email(email.getText().toString());
+        if (erro != null) { email.setError(erro); email.requestFocus(); return false; }
         return true;
     }
 
@@ -344,6 +345,63 @@ public class MainActivity extends AppCompatActivity {
         view.setTextColor(color);
         if (bold) view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         return view;
+    }
+
+    /** Rótulo de campo obrigatório: "NOME *", lido como "NOME, obrigatório". */
+    private TextView requiredLabel(String label) {
+        TextView view = text(label, 12, getColor(R.color.onboarding_muted), true);
+        FormularioValidado.marcarObrigatorio(view);
+        return view;
+    }
+
+    private TextView requiredLegend() {
+        TextView legend = text("* Campos obrigatórios", 11, getColor(R.color.onboarding_muted), false);
+        legend.setGravity(Gravity.CENTER);
+        return legend;
+    }
+
+    /**
+     * Indicador de força da senha (3 barras + texto). É apenas visual: o único bloqueio é o
+     * mínimo de 6 caracteres exigido pelo Firebase Authentication.
+     */
+    private void addPasswordStrength(LinearLayout parent, EditText passwordField) {
+        LinearLayout bars = new LinearLayout(this);
+        View[] segments = new View[3];
+        for (int i = 0; i < segments.length; i++) {
+            segments[i] = new View(this);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(4), 1);
+            if (i > 0) params.leftMargin = dp(4);
+            bars.addView(segments[i], params);
+        }
+        bars.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        parent.addView(bars, new LinearLayout.LayoutParams(-1, dp(4)));
+        TextView label = text("", 12, getColor(R.color.onboarding_muted), false);
+        label.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(-1, -2);
+        labelParams.setMargins(0, dp(4), 0, dp(15));
+        parent.addView(label, labelParams);
+        Runnable update = () -> {
+            RegrasFormulario.Forca forca = RegrasFormulario.forca(passwordField.getText().toString());
+            int color = forca == RegrasFormulario.Forca.FORTE ? 0xFF2E7D32
+                    : forca == RegrasFormulario.Forca.MEDIA ? 0xFFF57C00 : 0xFFD32F2F;
+            for (int i = 0; i < segments.length; i++) {
+                segments[i].setBackground(rounded(i < forca.nivel ? color : getColor(R.color.onboarding_border),
+                        i < forca.nivel ? color : getColor(R.color.onboarding_border), 2));
+            }
+            if (forca == RegrasFormulario.Forca.VAZIA) {
+                label.setText("Mínimo de 6 caracteres. Para uma senha forte, combine letras maiúsculas, minúsculas, números e símbolos.");
+                label.setTextColor(getColor(R.color.onboarding_muted));
+            } else {
+                label.setText("Força da senha: " + forca.rotulo);
+                label.setTextColor(color);
+            }
+        };
+        passwordField.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+            @Override public void afterTextChanged(android.text.Editable s) { update.run(); }
+        });
+        update.run();
     }
 
     private EditText input(String hint, int type) {

@@ -21,6 +21,7 @@ public class OnboardingStep3Activity extends AppCompatActivity {
     public static final String EXTRA_UNKNOWN = "consumption_unknown";
     private TextInputEditText water, energy;
     private TextInputLayout waterLayout, energyLayout;
+    private FormularioValidado form;
     private CheckBox unknown;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +42,13 @@ public class OnboardingStep3Activity extends AppCompatActivity {
             energy.setText(state.getString(EXTRA_ENERGY, ""));
             unknown.setChecked(state.getBoolean(EXTRA_UNKNOWN, false));
         }
+        // Campos opcionais: vazio é aceito; preenchido precisa ser válido. Continuar exige
+        // ao menos um consumo informado ou a opção "ainda não sei".
+        FormularioValidado.Regra opcional = t -> t.trim().isEmpty() ? null : ValorDecimal.validar(t, ValorDecimal.Regra.CONSUMO).erro;
+        form = new FormularioValidado(findViewById(R.id.btnContinuar))
+                .campo(water, waterLayout, opcional)
+                .campo(energy, energyLayout, opcional)
+                .condicao(() -> unknown.isChecked() || !value(water).isEmpty() || !value(energy).isEmpty());
         unknown.setOnCheckedChangeListener((button, checked) -> setUnknown(checked));
         setUnknown(unknown.isChecked());
         findViewById(R.id.btnVoltar).setOnClickListener(v -> returnToPreviousStep());
@@ -56,6 +64,7 @@ public class OnboardingStep3Activity extends AppCompatActivity {
         }
         waterLayout.setEnabled(!checked);
         energyLayout.setEnabled(!checked);
+        if (form != null) form.reavaliar();
     }
 
     private void continueOnboarding() {
