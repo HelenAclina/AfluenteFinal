@@ -361,8 +361,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Indicador de força da senha (3 barras + texto). É apenas visual: o único bloqueio é o
-     * mínimo de 6 caracteres exigido pelo Firebase Authentication.
+     * Indicador de força da senha (3 barras + texto). É apenas visual; os bloqueios ficam em
+     * RegrasFormulario.senhaNova (6+ caracteres, maiúscula e caractere especial).
      */
     private void addPasswordStrength(LinearLayout parent, EditText passwordField) {
         LinearLayout bars = new LinearLayout(this);
@@ -389,7 +389,7 @@ public class MainActivity extends AppCompatActivity {
                         i < forca.nivel ? color : getColor(R.color.onboarding_border), 2));
             }
             if (forca == RegrasFormulario.Forca.VAZIA) {
-                label.setText("Mínimo de 6 caracteres. Para uma senha forte, combine letras maiúsculas, minúsculas, números e símbolos.");
+                label.setText("Mínimo de 6 caracteres, com pelo menos uma letra maiúscula e um caractere especial (ex.: ! @ # $ %).");
                 label.setTextColor(getColor(R.color.onboarding_muted));
             } else {
                 label.setText("Força da senha: " + forca.rotulo);

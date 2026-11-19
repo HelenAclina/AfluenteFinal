@@ -22,10 +22,16 @@ public class RegrasFormularioTest {
             assertEquals(invalido, "Informe um e-mail válido (ex.: nome@dominio.com).", RegrasFormulario.email(invalido));
     }
 
-    @Test public void senhaNovaSoBloqueiaAbaixoDoMinimoDoFirebase() {
+    @Test public void senhaNovaExigeTamanhoMaiusculaEEspecial() {
         assertEquals("Crie uma senha.", RegrasFormulario.senhaNova(""));
-        assertEquals("A senha deve ter pelo menos 6 caracteres.", RegrasFormulario.senhaNova("12345"));
-        assertNull(RegrasFormulario.senhaNova("123456")); // fraca, mas aceita: o indicador é só visual
+        assertEquals("A senha precisa ter pelo menos 6 caracteres, uma letra maiúscula e um caractere especial (ex.: ! @ # $ %).",
+                RegrasFormulario.senhaNova("abc"));
+        assertEquals("A senha precisa ter uma letra maiúscula.", RegrasFormulario.senhaNova("agua#2026"));
+        assertEquals("A senha precisa ter um caractere especial (ex.: ! @ # $ %).", RegrasFormulario.senhaNova("Agua2026"));
+        assertEquals("A senha precisa ter pelo menos 6 caracteres.", RegrasFormulario.senhaNova("Ab#1"));
+        assertNull(RegrasFormulario.senhaNova("Agua#2026"));
+        assertNull(RegrasFormulario.senhaNova("Ébano.1")); // maiúscula acentuada e ponto contam
+        assertEquals("A senha precisa ter um caractere especial (ex.: ! @ # $ %).", RegrasFormulario.senhaNova("Agua 2026")); // espaço não conta
     }
 
     @Test public void confirmacao() {

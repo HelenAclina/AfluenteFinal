@@ -44,11 +44,33 @@ public final class RegrasFormulario {
         return texto == null || texto.isEmpty() ? "Informe sua senha." : null;
     }
 
-    /** Senha nova (cadastro): o único bloqueio é o mínimo do Firebase; a força é apenas informativa. */
+    /**
+     * Senha nova (cadastro). Regras da equipe: mínimo de 6 caracteres (também exigido pelo Firebase),
+     * ao menos uma letra maiúscula e ao menos um caractere especial. A força continua informativa.
+     */
     public static String senhaNova(String texto) {
         if (texto == null || texto.isEmpty()) return "Crie uma senha.";
-        if (texto.length() < SENHA_MINIMA) return "A senha deve ter pelo menos " + SENHA_MINIMA + " caracteres.";
-        return null;
+        java.util.List<String> faltando = new java.util.ArrayList<>();
+        if (texto.length() < SENHA_MINIMA) faltando.add("pelo menos " + SENHA_MINIMA + " caracteres");
+        if (!temMaiuscula(texto)) faltando.add("uma letra maiúscula");
+        if (!temEspecial(texto)) faltando.add("um caractere especial (ex.: ! @ # $ %)");
+        if (faltando.isEmpty()) return null;
+        return "A senha precisa ter " + juntar(faltando) + ".";
+    }
+
+    /** Letra maiúscula, incluindo acentuadas (ex.: "É"). */
+    public static boolean temMaiuscula(String texto) {
+        return texto != null && texto.codePoints().anyMatch(Character::isUpperCase);
+    }
+
+    /** Qualquer caractere que não seja letra, número ou espaço (ex.: ! @ # $ % & * . -). */
+    public static boolean temEspecial(String texto) {
+        return texto != null && texto.codePoints().anyMatch(c -> !Character.isLetterOrDigit(c) && !Character.isWhitespace(c));
+    }
+
+    private static String juntar(java.util.List<String> itens) {
+        if (itens.size() == 1) return itens.get(0);
+        return String.join(", ", itens.subList(0, itens.size() - 1)) + " e " + itens.get(itens.size() - 1);
     }
 
     public static String confirmacao(String senha, String confirmacao) {
